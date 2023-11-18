@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Hello World with D3.js</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+</head>
+<body>
+    <div id="canvas"></div>
+
+    <script>
+    // Set the dimensions for the canvas
+    var width = 800, height = 400;
+
+    // Create an SVG element
+    var svg = d3.select("#canvas").append("svg")
+                .attr("width", width)
+                .attr("height", height);
+
+    // Add text to the SVG
+    svg.append("text")
+
+
+    .attr("x", width / 2)             
+    .attr("y", height / 2)
+    .attr("text-anchor", "middle")  
+    .style("font-size", "20px") 
+    .text("Hello World!Hello World!Hello World!");
+    </script>
+</body>
+</html>
