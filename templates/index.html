@@ -2,29 +2,159 @@
 <html>
 <head>
     <title>Hello World with D3.js</title>
-    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://d3js.org/d3.v4.min.js"></script>
+    <link href="{{ url_for('static', filename='css/styles.css') }}" rel="stylesheet">
 </head>
 <body>
-    <div id="canvas"></div>
-
+    <div id="chart"></div>
     <script>
-    // Set the dimensions for the canvas
-    var width = 800, height = 400;
+        var data = [
+        {name: "Grassland with woody biomass", value: 17.98},
+        {name: "Production grassland", value: 212.97},
+        {name: "Cropland", value: 7.78},
+        {name: "Wetland", value: 54.21},
+        {name: "Built-up area", value: 9.82}
+    ];
 
-    // Create an SVG element
-    var svg = d3.select("#canvas").append("svg")
-                .attr("width", width)
-                .attr("height", height);
+     // Calculate the total
+     var total = data.reduce((acc, cur) => acc + cur.value, 0);
 
-    // Add text to the SVG
-    svg.append("text")
+     var width = 200;
+     var height = 200;
+     var opacity = .8;
+     var opacityHover = 1;
+     var otherOpacityOnHover = .8;
+     var tooltipMargin = 13;
+     var chart = "#chart";
 
+     var radius = Math.min(width, height) / 2;
+     var color = d3.scaleOrdinal(d3.schemeCategory10);
 
-    .attr("x", width / 2)             
-    .attr("y", height / 2)
-    .attr("text-anchor", "middle")  
-    .style("font-size", "20px") 
-    .text("Hello World!Hello World!Hello World!");
-    </script>
+     var svg = d3.select(chart)
+         .append('svg')
+         .attr('class', 'pie')
+         .attr('width', width)
+         .attr('height', height);
+
+    // Add title text
+    //svg.append("text")
+    //.attr("x", width / 2)             
+    //.attr("y", 20) // Adjust this value to position the text
+    //.attr("text-anchor", "middle")  
+    //.style("font-size", "12px") 
+    //.style("text-decoration", "underline")  
+    //.text("Between 1990 and 2016, 300ha of forest land were converted to:");
+
+     var g = svg.append('g')
+         .attr('transform', 'translate(' + (width / 2) + ',' + (height / 2) + ')');
+
+     var arc = d3.arc()
+         .innerRadius(0)
+         .outerRadius(radius);
+
+     var pie = d3.pie()
+         .value(function(d) { return d.value; })
+         .sort(null);
+
+     var path = g.selectAll('path')
+         .data(pie(data))
+         .enter()
+         .append("g")
+         .append('path')
+         .attr('d', arc)
+         .attr('fill', (d, i) => color(i))
+         .style('opacity', opacity)
+         .style('stroke', 'white')
+         .on("mouseover", function(d) {
+             var percent = Math.round(1000 * d.data.value / total) / 10; // Round to one decimal place
+             d3.selectAll('path')
+                 .style("opacity", otherOpacityOnHover);
+             d3.select(this)
+                 .style("opacity", opacityHover);
+
+             let g = d3.select("svg")
+                 .style("cursor", "pointer")
+                 .append("g")
+                 .attr("class", "tooltip")
+                 .style("opacity", 0);
+
+             g.append("text")
+                 .attr("class", "name-text")
+                 .text(`${d.data.name},(${percent}%)`) // Display name, value, and percentage
+                 .attr('text-anchor', 'middle');
+
+             let text = g.select("text");
+             let bbox = text.node().getBBox();
+             g.insert("rect", "text")
+                 .attr("x", bbox.x - 5)
+                 .attr("y", bbox.y - 5)
+                 .attr("width", bbox.width + 10)
+                 .attr("height", bbox.height + 10)
+                 .style("fill", "white")
+                 .style("opacity", 0.75);
+         })
+    .on("mousemove", function(d) {
+            let mousePosition = d3.mouse(this);
+            let x = mousePosition[0] + width/2;
+            let y = mousePosition[1] + height/2 - tooltipMargin;
+        
+            let text = d3.select('.tooltip text');
+            let bbox = text.node().getBBox();
+            if(x - bbox.width/2 < 0) {
+            x = bbox.width/2;
+            }
+            else if(width - x - bbox.width/2 < 0) {
+            x = width - bbox.width/2;
+            }
+        
+            if(y - bbox.height/2 < 0) {
+            y = bbox.height + tooltipMargin * 2;
+            }
+            else if(height - y - bbox.height/2 < 0) {
+            y = height - bbox.height/2;
+            }
+        
+            d3.select('.tooltip')
+            .style("opacity", 1)
+            .attr('transform',`translate(${x}, ${y})`);
+        })
+    .on("mouseout", function(d) {   
+        d3.select("svg")
+            .style("cursor", "none")  
+            .select(".tooltip").remove();
+        d3.selectAll('path')
+            .style("opacity", opacity);
+        })
+    .on("touchstart", function(d) {
+        d3.select("svg")
+            .style("cursor", "none");    
+    })
+    .each(function(d, i) { this._current = i; });
+    
+    let legend = d3.select("#chart").append('div')
+        .attr('class', 'legend')
+        .style('margin-top', '30px');
+    
+    let keys = legend.selectAll('.key')
+        .data(data)
+        .enter().append('div')
+        .attr('class', 'key')
+        .style('display', 'flex')
+        .style('align-items', 'center')
+        .style('margin-right', '20px');
+    
+        keys.append('div')
+        .attr('class', 'symbol')
+        .style('height', '10px')
+        .style('width', '10px')
+        .style('margin', '5px 5px')
+        .style('background-color', (d, i) => color(i));
+    
+        keys.append('div')
+        .attr('class', 'name')
+        .text(d => `${d.name} (${d.value} ha)`);
+    
+        keys.exit().remove();
+  </script>
 </body>
 </html>
